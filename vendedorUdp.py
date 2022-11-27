@@ -1,5 +1,6 @@
 import socket
 import socket as skt
+from datetime import datetime
 
 ip_Servidor = '127.0.0.1'
 porta_Servidor = 9000
@@ -31,8 +32,20 @@ while True:
     id_loja = input()
 
     msg, servidor = udp.recvfrom(1024)
-    print(msg.decode())
-    data_venda = input()
+    data_venda = ''
+    while True:
+        print(msg.decode())
+        data_venda = input()
+        if '/' in data_venda:
+            data_venda = data_venda.replace(" ", "/")
+        elif '-' in data_venda:
+            data_venda = data_venda.replace("-", "/")
+        data_venda = datetime.strptime(data_venda, '%d/%m/%Y').date()
+        if data_venda > datetime.today().date():
+            print("Data informada maior que data atual! Informe uma data Válida DD/MM/YYYY")
+        else:
+            data_venda = str(data_venda)
+            break
 
     msg, servidor = udp.recvfrom(1024)
     print(msg.decode())
