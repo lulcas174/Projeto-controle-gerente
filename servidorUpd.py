@@ -1,4 +1,5 @@
 import socket
+from datetime import datetime
 
 ip = ''
 porta = 9000
@@ -11,7 +12,7 @@ while True:
     msg, cliente = udp.recvfrom(1024)
     msg = msg.decode()
     if msg == 'G3R123':
-        print('Um Gerente Conectado Com Sucesso.')
+        print(f"O Gerente {cliente[1]} Conectou-se.")
         conectado = ('Gerente Conectado Com Sucesso.')
         udp.sendto(conectado.encode("utf8"), cliente)
         while True: 
@@ -27,6 +28,7 @@ while True:
             msg, cliente = udp.recvfrom(1024)
             msg = msg.decode()
             if msg == '6' or msg.lower() == 'sair':
+                print(f"o gerente {cliente[1]} desconectou-se...")
                 break
             if msg == '1' or msg.lower() == 'total de vendas de um vendedor':
                 nome = 'informe o nome do vendedor'
@@ -34,10 +36,14 @@ while True:
                 nome_vendedor, cliente = udp.recvfrom(1024)
                 nome_vendedor = nome_vendedor.decode()
                 count = 0
+                vendedor = ''
                 for i, v in enumerate(consulta):
                     if consulta[i]['nome_vendedor'] == nome_vendedor:
                         count += 1
-                vendedor = (f"O vendedor {nome_vendedor} fez {count} vendas")
+                if count == 0:
+                    vendedor = ("Erro! O vendedor Fornecido não está cadastrado na base de dados,certifique-se de que está escrito corretamente")
+                else:
+                    vendedor = (f"O vendedor {nome_vendedor} fez {count} venda(s)")
                 udp.sendto(vendedor.encode("utf8"), cliente)
 
             elif msg == '2' or msg.lower() == 'total de vendas de uma loja':
@@ -46,26 +52,35 @@ while True:
                 id_loja, cliente = udp.recvfrom(1024)
                 id_loja = id_loja.decode()
                 count = 0
+                loja = ''
                 for i, v in enumerate(consulta):
                     if consulta[i]['id_loja'] == id_loja:
                         count += 1
-                loja = (f"O total de Vendas da Loja foi De {count}")
+                if count == 0:
+                    loja = ("Erro! A loja Fornecida não está cadastrada na base de dados,certifique-se de que está escrito corretamente")
+                else:
+                    loja = (f"A Loja {id_loja} fez {count} venda(s)")
                 udp.sendto(loja.encode("utf8"), cliente)
             elif msg == '3' or msg.lower() == 'total de vendas da rede de lojas durante um periodo':
-                data = 'informe uma data'
+                data = 'informe uma data DD/MM/YYYY'
                 udp.sendto(data.encode("utf8"), cliente)
                 data_venda, cliente = udp.recvfrom(1024)
                 data_venda = data_venda.decode()
                 count = 0
+                totalLoja = ''
                 if '/' in data_venda:
-                    data_venda = data_venda.replace("/", "")
+                    data_venda = data_venda.replace(" ", "/")
                 elif '-' in data_venda:
-                    data_venda = data_venda.replace("-", "")
+                    data_venda = data_venda.replace("-", "/")
+                data_venda = datetime.strptime(data_venda, '%Y/%m/%d').date()
                 for i, v in enumerate(consulta):
                     if consulta[i]['data_venda'] == data_venda:
                         count += 1
-                totalLoja = (
-                    f"O total de vendas da loja durante o período especificado foi de {count} vendas")
+                if count == 0:
+                    totalLoja = ("Não houve vendas durante este periodo!")
+                else:
+                    totalLoja = (
+                        f"O total de vendas da loja durante o período especificado foi de {count} vendas")
                 udp.sendto(totalLoja.encode("utf8"), cliente)
             elif msg == '4' or msg.lower() == 'melhor vendedor':
                 melhorVend = 0
@@ -73,23 +88,24 @@ while True:
                 vend = ''
                 vend1 = ''
                 for i, v in enumerate(consulta):
-                    if consulta[i]['valor_vendido'] > melhorVend:
-                        melhorVend = consulta[i]['valor_vendido']
-                        vend = consulta[i]['nome_vendedor']
-                if len(consulta) > 1:
-                    for i, v in enumerate(consulta):
-                        j = i + 1
-                        aux = 0
-                        for j, va in enumerate(consulta):
-                            if consulta[i]['nome_vendedor'] == consulta[j]['nome_vendedor']:
-                                aux = consulta[i]['valor_vendido'] + \
-                                    consulta[j]['valor_vendido']
+                    j = i + 1
+                    aux = 0
+                    for j, va in enumerate(consulta):
+                        if consulta[i]['nome_vendedor'] == consulta[j]['nome_vendedor'] and consulta[i]['id_loja'] == consulta[j]['id_loja']:
+                            aux = consulta[i]['valor_vendido'] + \
+                                consulta[j]['valor_vendido']
+                        elif consulta[i]['valor_vendido'] > melhorVend:
+                            melhorVend = consulta[i]['valor_vendido']
+                            vend = consulta[i]['nome_vendedor']
                         if aux > melhorVend1:
                             melhorVend1 = aux
                             vend1 = consulta[i]['nome_vendedor']
-                if (melhorVend > melhorVend1):
+                if melhorVend > melhorVend1:
                     melhorVendedor = (
                         f"O vendedor {vend} foi o melhor com R$ {melhorVend} em vendas")
+                    udp.sendto(melhorVendedor.encode("utf8"), cliente)
+                elif melhorVend == melhorVend1:
+                    melhorVendedor = (f"Os vendedores {vend} e {vend1} foram os melhores com R$ {melhorVend} em vendas")
                     udp.sendto(melhorVendedor.encode("utf8"), cliente)
                 else:
                     melhorVendedor = (
@@ -101,30 +117,32 @@ while True:
                 loja = ''
                 loja1 = ''
                 for i, v in enumerate(consulta):
-                    if consulta[i]['valor_vendido'] > vendLoja:
-                        vendLoja = consulta[i]['valor_vendido']
-                        loja = consulta[i]['id_loja']
-                for i, v in enumerate(consulta):
                     j = i + 1
                     aux = 0
-                    if len(consulta) > 1:
-                        for j, v in enumerate(consulta):
-                            if consulta[i]['id_loja'] == consulta[j]['id_loja']:
-                                aux = consulta[i]['valor_vendido'] + \
-                                    consulta[j]['valor_vendido']
-                        if aux > vendLoja1:
-                            vendLoja1 = aux
-                            loja1 = consulta[i]['id_loja']
+                    for j, v in enumerate(consulta):
+                        if consulta[i]['id_loja'] == consulta[j]['id_loja']:
+                            aux = consulta[i]['valor_vendido'] + \
+                                consulta[j]['valor_vendido']
+                        elif consulta[i]['valor_vendido'] > vendLoja:
+                            vendLoja = consulta[i]['valor_vendido']
+                            loja = consulta[i]['id_loja']
+                    if aux > vendLoja1:
+                        vendLoja1 = aux
+                        loja1 = consulta[i]['id_loja']
                 if vendLoja > vendLoja1:
                     melhorLoja = (
-                        f"A loja {loja} foi a melhor com R$ {vendLoja} vendas em vendas")
+                        f"A {loja} foi a melhor com R$ {vendLoja} em vendas")
+                    udp.sendto(melhorLoja.encode("utf8"), cliente)
+                elif vendLoja == vendLoja1:
+                    melhorLoja = (
+                        f"As lojas {loja} e {loja1} foram as melhores com R$ {vendLoja}  em vendas")
                     udp.sendto(melhorLoja.encode("utf8"), cliente)
                 else:
                     melhorLoja = (
-                        f"A loja {loja1} foi a melhor com R$ {vendLoja1} em vendas")
+                        f"A l {loja1} foi a melhor com R$ {vendLoja1} em vendas")
                     udp.sendto(melhorLoja.encode("utf8"), cliente)
     elif msg == 'V3nD321':
-        print("Um vendedor foi conectado")
+        print(f"O Vendedor {cliente[1]} Conectou-se.")
         conectado = ('Vendedor Conectado Com Sucesso.')
         udp.sendto(conectado.encode("utf8"), cliente)
         while True:
@@ -132,7 +150,7 @@ while True:
             udp.sendto(nome_vendedor.encode("utf8"), cliente)
             id_loja = 'Informe a identificação da loja '
             udp.sendto(id_loja.encode("utf8"), cliente)
-            data_venda = 'Informe a data da venda '
+            data_venda = 'Informe a data da venda DD/MM/YYYY'
             udp.sendto(data_venda.encode("utf8"), cliente)
             valor_vendido = 'Informe o valor vendido '
             udp.sendto(valor_vendido.encode("utf8"), cliente)
@@ -141,16 +159,16 @@ while True:
             msg = msg.decode()
             dados_vendedor = eval(msg)
             dados_vendedor['valor_vendido'] = float(dados_vendedor['valor_vendido'])
-            if '/' in dados_vendedor['data_venda']:
+            if ' ' in dados_vendedor['data_venda']:
                 dados_vendedor['data_venda'] = dados_vendedor['data_venda'].replace(
-                    "/", "")
+                    " ", "/")
             elif '-' in dados_vendedor['data_venda']:
                 dados_vendedor['data_venda'] = dados_vendedor['data_venda'].replace(
-                    "-", "")
+                    "-", "/")
+            dados_vendedor['data_venda'] = datetime.strptime(dados_vendedor['data_venda'], '%Y/%m/%d').date()
             consulta.append(dados_vendedor)
             if len(consulta) > 0:
                 sucesso = 'OK, dado salvo com sucesso!'
-                print(consulta)
                 udp.sendto(sucesso.encode("utf8"), cliente)
             else:
                 erro = 'ERRO!!Dados inconsistentes, tente novamente!'
@@ -160,6 +178,8 @@ while True:
             msg, servidor = udp.recvfrom(1024)
             msg = msg.decode()
             if msg.lower() == 'n' or msg.lower() == 'não':
+                print(consulta)
+                print(f"o Vendedor {cliente[1]} desconectou-se...")
                 break
     else:
         erro = 'Erro!! Codigo Inválido'
