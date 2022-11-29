@@ -25,15 +25,3 @@
 ## 10 - Basta escolher uma das opções disponibilizadas no menu, informando os numeros correspondetes que antecedem as opções e esperar pelos resultados
 
 ## 11 - Na opção "3" ou "total de vendas da rede de lojas durante um periodo", informe a data no formato brasileiro "DD/MM/YYYY", ano com 4 DIGITOS, caso informe uma data maior que a atual, ele irá exibir uma mensagem informado-o, e pedindo uma data válida.
-
-### Integrantes da Equipe ↓
-
-#### Felipe Messias Alves de Jesus Reis, RA: 1272115789;
-
-#### Lucas da Silva de Lima, RA: 1272118907;
-
-#### Pármenas Haniel Pinheiro Moreira, RA: 1272227645;
-
-#### Tereza Muniz Ferreira, RA: 1272122249;
-
-#### Sérgio Ricardo Santana Santos, RA: 1272116116.
